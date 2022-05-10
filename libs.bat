@@ -10,5 +10,6 @@ from timm import create_model, list_models
 from transformers import Trainer, TrainingArguments
 from torch import tensor, Tensor
 from PIL import Image
+from torchvision.transforms import Compose, ToTensor, Resize, Grayscale
 
 print("\n\n Core Libraries Imported. \n\n")
