@@ -9,5 +9,6 @@ from torch.utils.data import Dataset
 from timm import create_model, list_models
 from transformers import Trainer, TrainingArguments
 from torch import tensor, Tensor
+from PIL import Image
 
 print("\n\n Core Libraries Imported. \n\n")
