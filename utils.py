@@ -1,36 +1,33 @@
 exec(open('libs.bat', 'r').read())
-  
 
-class IMC22Dataset(Dataset):
 
-    def __init__(self, target : str, ext : str='.csv', **kwargs):
+class TrainIMC22Dataset(Dataset):
+
+    def __init__(self, train_dir : str, **kwargs):
         super().__init__()
+        
 
-        self.metadata = {
-                "uid" : uuid4(),
-                "dir" : target,
-                "dir_df" : self._pathfinder(target)
-                }
-        _exts = self.metadata['dir_df']['abspath'].str.contains(ext)
-        self.metadata['flist'] = self.metadata['dir_df'][_exts]
-        print(self.metadata['flist']['abspath'].str.rsplit(r'\/.+$'))
+        df = DataFrame(listdir(train_dir), columns = ['classes'])
 
-    def _dir2dict(self, target : str, \
-            ops : List[str] = ['abspath', 'isdir']) \
-            -> Dict[str, object]:
+        csv_files = ['calibrations', 'pair_covisibility']
 
-        f = lambda x: getattr(path, x)(target)
+        calibrations = list(map(lambda x: \
+                DataFrame([x], columns = ['class']).join(\
+                read_csv(path.abspath(f'{train_dir}/{x}/calibration.csv')), how='cross'), listdir(train_dir)))
 
-        return dict(zip(ops, (map(f, ops))))
+        df = concat(calibrations)
 
-    def _pathfinder(self, target : str) -> DataFrame:
+        print(df.head())
 
-        row = self._dir2dict(target)
-        if row['isdir']:
-            return concat(list(map(lambda x: \
-                    self._pathfinder(path.join(target, x)), \
-                    listdir(row['abspath'])))
-                    + [DataFrame([row])])
+        """
+        df['pair_covisibility'] = df['buildings'].apply(lambda x: \
+                read_csv(path.abspath(f'{train_dir}/{x}/pair_covisibility.csv')))
+        """
 
-        return DataFrame([row])
+        
 
+
+
+
+
+#f = lambda x: getattr(path, x)(target)
