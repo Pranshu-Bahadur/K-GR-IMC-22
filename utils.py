@@ -1,33 +1,31 @@
 exec(open('libs.bat', 'r').read())
 
 
+
+#==============================================================================
+#  Utility functions
+#==============================================================================
+
+
+
+
+def imc22_train_directory_parser(train_directory : str,
+        target_file : str = 'calibration.csv',
+        column_name : str = 'basename') -> DataFrame:
+
+    return concat(list(map(lambda x: \
+                DataFrame([x], columns = [column_name]).join(\
+                read_csv(path.abspath(f'{train_directory}/{x}/{target_file}')),\
+                how='cross'), listdir(train_directory))))
+
+
+
 class TrainIMC22Dataset(Dataset):
+    def __init__(self, train_directory : str):
+        self.train_directory = train_directory
+        self.file_df = imc22_train_directory_parser(train_directory)
 
-    def __init__(self, train_dir : str, **kwargs):
-        super().__init__()
-        
-
-        df = DataFrame(listdir(train_dir), columns = ['classes'])
-
-        csv_files = ['calibrations', 'pair_covisibility']
-
-        calibrations = list(map(lambda x: \
-                DataFrame([x], columns = ['class']).join(\
-                read_csv(path.abspath(f'{train_dir}/{x}/calibration.csv')), how='cross'), listdir(train_dir)))
-
-        df = concat(calibrations)
-
-        print(df.head())
-
-        """
-        df['pair_covisibility'] = df['buildings'].apply(lambda x: \
-                read_csv(path.abspath(f'{train_dir}/{x}/pair_covisibility.csv')))
-        """
-
-        
-
-
-
-
-
-#f = lambda x: getattr(path, x)(target)
+    def __getitem__(self, idx : int) -> Tuple[Tensor, List[Tensor]]:
+        row = self.file_df.iloc[idx]
+        image_directory = reduce(lambda x, y: f'{x}/{y}', tuple(row[:2].values), self.train_directory)
+        y = list(map(lambda x: Tensor(list(eval(x.replace(" ", ", ")))), row[2:].values))
