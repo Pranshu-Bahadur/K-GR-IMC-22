@@ -7,7 +7,7 @@
 ---
 
 
-$P: M /rightarrow I$
+$P: M \to I$
  
 
 
