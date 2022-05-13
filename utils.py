@@ -42,7 +42,7 @@ class TrainIMC22Dataset(Dataset):
         self.transforms = transforms
 
     def __getitem__(self, idx : int) -> Tuple[Tensor, List[Tensor]]:
-
+        
         row = self.train_files_df.iloc[idx]
 
         image_directory = reduce(lambda x, y: f'{x}/{y}', \
@@ -60,3 +60,23 @@ def split_dataset(dataset : Dataset, split_factor : float) -> List[Subset]:
     splits = [train_split, eval_split]
     splits.append(len(dataset) - sum(splits))
     return torch.utils.data.dataset.random_split(dataset, splits)
+
+
+
+
+"""
+Let an M be the 2D representation 256x256
+
+m_i =     K   * ((R   *   M_i)        + T')
+
+1x1x3 = 3x3x3 * ((3x3x3)*(1x1x3) + (1x1x3))
+
+//^Due to 3 channels (Note: I need a pen and paper...)
+
+Affine Map:
+
+c_i = R(M_i) + T
+
+//NOT ENOUGH SYMBOLS
+
+"""
