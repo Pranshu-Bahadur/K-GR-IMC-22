@@ -3,6 +3,7 @@ exec(open('libs.bat', 'r').read())
 #==============================================================================
 #  Utility functions
 #==============================================================================
+
 def imc22_train_directory_parser(train_directory : str,
         target_file : str = 'calibration.csv',
         column_name : str = 'basename') -> DataFrame:
@@ -46,25 +47,8 @@ class TrainIMC22Dataset(Dataset):
         self.transforms = transforms
 
     def __getitem__(self, idx : int) -> Tuple[Tensor, List[Tensor]]:
-
-        row = self.pair_cov_df.iloc[idx]
-
-        ops = [lambda x: x.get('pair'), lambda x: x.split('-')]
-
-        pairs = reduce(lambda x, op: op(x), ops, row)
-
-        print(pairs)
-        calibrations = self.calibration_df.\
-                query(f'{pairs} in image_id').\
-                drop(columns=['basename', 'images'])
-
         
-
-
-        print(calibrations)
-        """
-
-
+        row = self.pair_cov_df.iloc[idx]
 
         img_dirs = list(map(lambda img_dir: [img_dir, reduce(lambda x, y: f'{x}/{y}', \
                         tuple([*row[:2].values, img_dir]), \
@@ -73,12 +57,14 @@ class TrainIMC22Dataset(Dataset):
 
         img_dirs = {k: v for k, v in img_dirs}
 
-        calis = self.calibration_df.query(f'image_id == {list(img_dirs.keys())}').squeeze().values
+        calis = self.calibration_df.query(f'image_id == {list(img_dirs.keys())}').squeeze()
 
 
         print(calis)
         print(type(calis))
 
+
+        """
         x = list(map(lambda k, v: \
                 list(map(lambda 
                 self.transforms(Image.open(v).convert('RGB')),\
