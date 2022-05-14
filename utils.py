@@ -22,9 +22,12 @@ class TrainIMC22Dataset(Dataset):
         self.calibration_df = imc22_train_directory_parser(train_directory)
         self.pair_cov_df = imc22_train_directory_parser(train_directory, \
                 'pair_covisibility.csv')
-
         self.pair_cov_df = self.pair_cov_df.where(lambda x: x['covisibility'] >= 0.1)
+        
+        self.pair_cov_df = self.pair_cov_df.drop_duplicates(['pair'])
         self.distn = self.pair_cov_df['basename'].value_counts()
+
+        print(self.distn)
 
 
         #Oversampling
@@ -36,7 +39,9 @@ class TrainIMC22Dataset(Dataset):
         self.pair_cov_df = concat(lst)
         self.distn = self.pair_cov_df['basename'].value_counts()
 
-        # Weights (Might be useful later)
+        print(self.distn)
+
+        #TODO USE WEIGHTED SAMPLING...
         self.weights = numpy.vstack(list(map(lambda val: \
                 val/self.distn.sum()*numpy.ones((val, 1)),\
                 self.distn.values))).flatten().tolist()
@@ -49,33 +54,38 @@ class TrainIMC22Dataset(Dataset):
 
         row = self.pair_cov_df.iloc[idx]
 
+        y = Tensor(array(eval(row[-1].replace(' ', ', '))))
+
         ops = [lambda x: x.get('pair'), lambda x: x.split('-')]
 
         pairs = reduce(lambda x, op: op(x), ops, row)
 
-        print(pairs)
         calibrations = self.calibration_df.\
-                query(f'{pairs} in image_id').\
-                drop(columns=['basename', 'images'])
+                query(f'{pairs} in image_id')
 
-        
+        calibrations = DataFrame(calibrations.groupby('image_id')).values
 
+        ops = [fromkey]
+        print(list(zip(*calibrations)))
 
-        print(calibrations)
+        #list(map(lambda image_df: print(image_df), calibrations.values()))
+
+        """
+                reduce(lambda x, y: f'{x}/{y}/', image_df[:2].values,\
+                f'{self.train_directory}'), c
         """
 
+        #print(image_dirs)
+        #x = list(map(lambda k, v: list(map(lambda x
 
 
-        img_dirs = list(map(lambda img_dir: [img_dir, reduce(lambda x, y: f'{x}/{y}', \
-                        tuple([*row[:2].values, img_dir]), \
-                self.train_directory) + '.jpg'],\
-                row[2].split('-')))
-
-        img_dirs = {k: v for k, v in img_dirs}
-
-        calis = self.calibration_df.query(f'image_id == {list(img_dirs.keys())}').squeeze().values
 
 
+
+
+        #list(map(lambda k, v: zip(img_dirs.items(), calibrations)
+
+        """
         print(calis)
         print(type(calis))
 
