@@ -63,51 +63,23 @@ class TrainIMC22Dataset(Dataset):
         calibrations = self.calibration_df.\
                 query(f'{pairs} in image_id')
 
-        calibrations = DataFrame(calibrations.groupby('image_id')).values
+        calibrations = DataFrame(calibrations.groupby('image_id'))
 
-        ops = [fromkey]
-        print(list(zip(*calibrations)))
+        calibrations = dict(zip(*list(zip(*(calibrations.values)))))
 
-        #list(map(lambda image_df: print(image_df), calibrations.values()))
+        dir_converter = lambda y: reduce(lambda x, y: f'{x}/{y}', y, f'{self.train_directory}')
 
-        """
-                reduce(lambda x, y: f'{x}/{y}/', image_df[:2].values,\
-                f'{self.train_directory}'), c
-        """
+        image_dirs = list(map(lambda v: dir_converter(\
+                v.get(['basename', 'images', 'image_id']).values.flatten()) + '.jpg', \
+                calibrations.values()))
 
-        #print(image_dirs)
-        #x = list(map(lambda k, v: list(map(lambda x
+        #TODO Reworking from here lol, been tripping. Can do this way better.
+        x = list(map(lambda i: \
+                [self.transforms(Image.open(i[0]).convert('RGB')),
+                Tensor(array(eval(i[1].iloc[0][3:].replace(' ', ', '))))], zip(image_dirs, calibrations.items())))
+        print(x[0])
 
-
-
-
-
-
-        #list(map(lambda k, v: zip(img_dirs.items(), calibrations)
-
-        """
-        print(calis)
-        print(type(calis))
-
-        x = list(map(lambda k, v: \
-                list(map(lambda 
-                self.transforms(Image.open(v).convert('RGB')),\
-                img_dirs.items()))
-
-
-        print(calis.values)
-
-
-
-        x.append(list(map(lambda row: Tensor(list(map(lambda val: eval(val.replace(" ", ", "))))\
-                , calis.values)))
-
-        print(x[-1].size())
-
-        #y = 
         return x, y
-
-        """
 
     def __len__(self):
         return self.pair_cov_df.size
