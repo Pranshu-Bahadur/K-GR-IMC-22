@@ -20,17 +20,22 @@ class TrainIMC22Dataset(Dataset):
             ToTensor()])):
 
         self.train_directory = train_directory
-        self.train_files_df = imc22_train_directory_parser(train_directory)
-        self.distn = self.train_files_df['basename'].value_counts()
+        self.calibration_df = imc22_train_directory_parser(train_directory)
+        self.pair_cov_df = imc22_train_directory_parser(train_directory, \
+                'pair_covisibility.csv')
+
+        self.pair_cov_df = self.pair_cov_df.where(lambda x: x['covisibility'] >= 0.1)
+        self.distn = self.pair_cov_df['basename'].value_counts()
+
 
         #Oversampling
         #TODO pick a better formula for Balancing...
-        lst = [self.train_files_df]
-        for class_index, group in self.train_files_df.groupby('basename'):
+        lst = [self.pair_cov_df]
+        for class_index, group in self.pair_cov_df.groupby('basename'):
             lst.append(group.sample(self.distn.max() - len(group), replace=True))
 
-        self.train_files_df = concat(lst)
-        self.distn = self.train_files_df['basename'].value_counts()
+        self.pair_cov_df = concat(lst)
+        self.distn = self.pair_cov_df['basename'].value_counts()
 
         # Weights (Might be useful later)
         self.weights = numpy.vstack(list(map(lambda val: \
@@ -43,15 +48,36 @@ class TrainIMC22Dataset(Dataset):
 
     def __getitem__(self, idx : int) -> Tuple[Tensor, List[Tensor]]:
         
-        row = self.train_files_df.iloc[idx]
+        row = self.pair_cov_df.iloc[idx]
 
-        image_directory = reduce(lambda x, y: f'{x}/{y}', \
-                tuple(row[:3].values), \
-                self.train_directory) + '.jpg'
+        img_dirs = list(map(lambda img_dir: [img_dir, reduce(lambda x, y: f'{x}/{y}', \
+                        tuple([*row[:2].values, img_dir]), \
+                self.train_directory) + '.jpg'],
+                row[2].split('-')))
 
-        x = self.transforms(Image.open(image_directory).convert('RGB'))
-        y = list(map(lambda x: Tensor(list(eval(x.replace(" ", ", ")))), row[3:].values))
+        img_dirs = dict({**zip(*img_dirs)})
+
+        print(img_dirs)
+
+        calibration_rows = list(map(lambda img_dir: \
+                self.calibration_df.where(lambda x: x['image_id'] == img_dir), img_dirs.keys()))
+
+        print(calibration_rows)
+
+        x = list(map(lambda img_dir: self.transforms(Image.open(img_dir).convert('RGB')),\
+                img_dirs.values()))
+
+        #list(map(lambda img_dir
+        #x.append(list(map(lambda x: Tensor(list(eval(x.replace(" ", ", ")))), row[-1])))
+
+        print(x[-1].size())
+
+        #y = 
         return x, y
+
+
+    def __len__(self):
+        return self.pair_cov_df.size
 
 
 def split_dataset(dataset : Dataset, split_factor : float) -> List[Subset]:
