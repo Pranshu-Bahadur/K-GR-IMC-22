@@ -94,10 +94,11 @@ class TrainIMC22Dataset(Dataset):
                     data[2][-1]*torch.ones(3, 3)], calis_x))
 
         f = lambda image, calis: (calis[0]@((calis[1]@image.view(3, -1)).T@calis[2]).T).view(3, 128, 128)
-
+        
         x = list(zip(images, calis_x))
 
         x = list(map(lambda y: f(*y), x))
+
 
         return x, y
 
