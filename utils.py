@@ -29,6 +29,7 @@ class TrainIMC22Dataset(Dataset):
 
         print(self.distn)
 
+        """
 
         #Oversampling
         #TODO pick a better formula for Balancing...
@@ -45,12 +46,12 @@ class TrainIMC22Dataset(Dataset):
         self.weights = numpy.vstack(list(map(lambda val: \
                 val/self.distn.sum()*numpy.ones((val, 1)),\
                 self.distn.values))).flatten().tolist()
-
+        """
         #------------
 
         self.transforms = transforms
 
-    def __getitem__(self, idx : int) -> Tuple[Tensor, List[Tensor]]:
+    def __getitem__(self, idx : int) -> Tuple[DataFrame, Tensor]:
 
         row = self.pair_cov_df.iloc[idx]
 
@@ -63,22 +64,28 @@ class TrainIMC22Dataset(Dataset):
         calibrations = self.calibration_df.\
                 query(f'{pairs} in image_id')
 
-        calibrations = DataFrame(calibrations.groupby('image_id'))
-
-        calibrations = dict(zip(*list(zip(*(calibrations.values)))))
 
         dir_converter = lambda y: reduce(lambda x, y: f'{x}/{y}', y, f'{self.train_directory}')
 
-        image_dirs = list(map(lambda v: dir_converter(\
-                v.get(['basename', 'images', 'image_id']).values.flatten()) + '.jpg', \
-                calibrations.values()))
+        calibrations['image_dir'] = calibrations['basename'].\
+                str.cat(calibrations[['images', 'image_id']].astype(str), sep = '/')
 
-        #TODO Reworking from here lol, been tripping. Can do this way better.
-        x = list(map(lambda i: \
-                [self.transforms(Image.open(i[0]).convert('RGB')),
-                Tensor(array(eval(i[1].iloc[0][3:].replace(' ', ', '))))], zip(image_dirs, calibrations.items())))
-        print(x[0])
+        calibrations['image_dir'] = calibrations['image_dir'].apply(lambda x: f'{self.train_directory}/{x}.jpg')
 
+        calibrations = calibrations.set_index(['image_id'])
+
+        calibrations = calibrations.drop(['basename', 'images'], axis=1)
+
+        _subset = ['camera_intrinsics', 'rotation_matrix', 'translation_vector']
+
+        calibrations[_subset] = calibrations[_subset].applymap(lambda x: Tensor(list(eval(x.replace(' ', ', ')))))
+
+        image_dirs = calibrations.drop(['image_dir'], axis=1)
+
+        calibrations['image'] = image_dirs.\
+                applymap(lambda x: self.transforms(Image.open(x['image_dir']).convert('RGB')))
+        
+        x = calibrations[['image', *_subset]].values
         return x, y
 
     def __len__(self):

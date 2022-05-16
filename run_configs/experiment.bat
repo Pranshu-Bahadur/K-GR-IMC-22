@@ -10,7 +10,7 @@ training_args = {
 
         "weight_decay": 1e-5,
 
-        "num_train_epochs": 100,
+        "num_train_epochs": 10,
 
         "logging_strategy": "epoch",
 
