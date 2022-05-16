@@ -12,12 +12,6 @@ training_args = TrainingArguments(**training_args)
 
 
 
-train_args = {
-        'model': IMC22Model('resnet18'),
-        'train_dataset': splits[0],
-        'eval_dataset': splits[1],
-        'args': training_args
-}
 
 
 
@@ -40,6 +34,7 @@ class IMC22Trainer(Trainer):
 
 class IMC22Model(torch.nn.Module):
     def __init__(self, model_name, **kwargs):
+        super().__init__()
         self.model1 = create_model(model_name, num_classes=1, pretrained=True, in_chans=3)
         self.model1.head.fc = torch.nn.Linear(self.model1.classifier.in_features, 1)
         self.model2 = create_model(model_name, num_classes=1, pretrained=True, in_chans=3)
@@ -49,7 +44,12 @@ class IMC22Model(torch.nn.Module):
         return self.model1(x) + self.model2
 
 
-
+train_args = {
+        'model': IMC22Model('efficientnet_v2s'),
+        'train_dataset': splits[0],
+        'eval_dataset': splits[1],
+        'args': training_args
+}
 
 
 
