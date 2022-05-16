@@ -14,7 +14,7 @@ def imc22_train_directory_parser(train_directory : str,
 
 
 class TrainIMC22Dataset(Dataset):
-    def __init__(self, train_directory : str, transforms : Compose = Compose([Resize([256, 256],\
+    def __init__(self, train_directory : str, transforms : Compose = Compose([Resize([224, 224],\
             Image.ANTIALIAS),\
             ToTensor()])):
 
@@ -64,7 +64,6 @@ class TrainIMC22Dataset(Dataset):
         calibrations = self.calibration_df.\
                 query(f'{pairs} in image_id')
 
-
         dir_converter = lambda y: reduce(lambda x, y: f'{x}/{y}', y, f'{self.train_directory}')
 
         calibrations['image_dir'] = calibrations['basename'].\
@@ -76,16 +75,23 @@ class TrainIMC22Dataset(Dataset):
 
         calibrations = calibrations.drop(['basename', 'images'], axis=1)
 
+        image_dirs = calibrations['image_dir'].values.tolist()
+
+        print(image_dirs)
+
+        images = list(map(lambda x: self.transforms(Image.open(x).convert('RGB')), image_dirs))
+
+        print(images)
+
+
         _subset = ['camera_intrinsics', 'rotation_matrix', 'translation_vector']
 
-        calibrations[_subset] = calibrations[_subset].applymap(lambda x: Tensor(list(eval(x.replace(' ', ', ')))))
+        calis_x = calibrations.get(_subset).applymap(lambda x: Tensor(fromstring(x, sep=' '))).values.tolist()
 
-        image_dirs = calibrations.drop(['image_dir'], axis=1)
-
-        calibrations['image'] = image_dirs.\
-                applymap(lambda x: self.transforms(Image.open(x['image_dir']).convert('RGB')))
+        print(calis_x)
         
-        x = calibrations[['image', *_subset]].values
+        x = list(zip(images, calis_x))
+
         return x, y
 
     def __len__(self):
