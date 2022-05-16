@@ -2,9 +2,9 @@ training_args = {
   
         "do_train": True,
 
-        "per_device_train_batch_size": 128,
+        "per_device_train_batch_size": 32,
 
-        "per_device_eval_batch_size": 256,
+        "per_device_eval_batch_size": 64,
 
         "learning_rate": 0.01,
 

@@ -67,18 +67,20 @@ class TrainIMC22Dataset(Dataset):
 
         dir_converter = lambda y: reduce(lambda x, y: f'{x}/{y}', y, f'{self.train_directory}')
 
-        calibrations['image_dir'] = calibrations['basename'].\
+        c = calibrations['basename'].\
                 str.cat(calibrations[['images', 'image_id']].astype(str), sep = '/')
 
-        calibrations['image_dir'] = calibrations['image_dir'].apply(lambda x: f'{self.train_directory}/{x}.jpg')
+        c = c.apply(lambda x: f'{self.train_directory}/{x}.jpg')
+
+        image_dirs = c.values.tolist()
 
         calibrations = calibrations.set_index(['image_id'])
 
         calibrations = calibrations.drop(['basename', 'images'], axis=1)
 
-        image_dirs = calibrations['image_dir'].values.tolist()
+        #image_dirs = calibrations['image_dir'].values.tolist()
 
-        print(image_dirs)
+        #print(image_dirs)
 
         images = list(map(lambda x: self.transforms(Image.open(x).convert('RGB')), image_dirs))
 
@@ -97,13 +99,12 @@ class TrainIMC22Dataset(Dataset):
         
         x = list(zip(images, calis_x))
 
-        x = list(map(lambda y: f(*y), x))
-
+        x = torch.stack(list(map(lambda y: f(*y), x)))
 
         return x, y
 
     def __len__(self):
-        return self.pair_cov_df.size
+        return self.distn.sum()
 
 
 def split_dataset(dataset : Dataset, split_factor : float) -> List[Subset]:
