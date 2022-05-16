@@ -14,8 +14,9 @@ def imc22_train_directory_parser(train_directory : str,
 
 
 class TrainIMC22Dataset(Dataset):
-    def __init__(self, train_directory : str, transforms : Compose = Compose([Resize([224, 224],\
-            Image.ANTIALIAS),\
+    def __init__(self, train_directory : str, transforms : Compose = Compose([Resize([128, 128],\
+            Image.ANTIALIAS),
+            #Grayscale(1),\
             ToTensor()])):
 
         self.train_directory = train_directory
@@ -83,7 +84,6 @@ class TrainIMC22Dataset(Dataset):
 
         print(images)
 
-
         _subset = ['camera_intrinsics', 'rotation_matrix', 'translation_vector']
 
         calis_x = calibrations.get(_subset).applymap(lambda x: Tensor(fromstring(x, sep=' '))).values.tolist()
@@ -92,6 +92,11 @@ class TrainIMC22Dataset(Dataset):
         
         x = list(zip(images, calis_x))
 
+
+        x = list(map(lambda data: (torch.stack([
+                    data[1][0].view(3, 3), 
+                    data[1][1].view(3, 3),
+                    data[1][-1]*torch.ones(3, 3)])@(data[0].view(3, -1))).view(3, -1), x))
         return x, y
 
     def __len__(self):

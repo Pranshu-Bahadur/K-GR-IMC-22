@@ -9,6 +9,8 @@ splits = split_dataset(training_dataset, 0.8)
 
 training_args = TrainingArguments(**training_args)
 
+def gen_matching_model(model_name : str):
+    pass
 
 train_args = {
         'model': create_model('resnet18', num_classes=1, pretrained=True, in_chans=3),
@@ -23,6 +25,18 @@ train_args = {
 class IMC22Trainer(Trainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.model.head.fc = torch.nn.Linear(model.classifier.in_features, 1)
         pass
+
+    def compute_loss(self, model, inputs, return_outputs=True):
+       """
+
+       Inputs: Batch x Tuple[List[Tuple[Tensor, List[Tensor]]], Tensor]
+       """
+       x, y = inputs
+
+
+
+
 
 print(IMC22Trainer(**train_args).model)
