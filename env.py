@@ -31,9 +31,11 @@ class IMC22Trainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=True):
        """
 
-       Inputs: Batch x Tuple[List[Tuple[Tensor, List[Tensor]]], Tensor]
+       Inputs: Batch x Tuple[List[Tensor], Tensor]
        """
        x, y = inputs
+
+       
 
 
 
