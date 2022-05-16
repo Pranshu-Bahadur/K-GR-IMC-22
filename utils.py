@@ -82,21 +82,23 @@ class TrainIMC22Dataset(Dataset):
 
         images = list(map(lambda x: self.transforms(Image.open(x).convert('RGB')), image_dirs))
 
-        print(images)
 
         _subset = ['camera_intrinsics', 'rotation_matrix', 'translation_vector']
 
         calis_x = calibrations.get(_subset).applymap(lambda x: Tensor(fromstring(x, sep=' '))).values.tolist()
 
-        print(calis_x)
-        
+
+        calis_x = list(map(lambda data:[
+                    data[0].view(3, 3), 
+                    data[1].view(3, 3),
+                    data[2][-1]*torch.ones(3, 3)], calis_x))
+
+        f = lambda image, calis: (calis[0]@((calis[1]@image.view(3, -1)).T@calis[2]).T).view(3, 128, 128)
+
         x = list(zip(images, calis_x))
 
+        x = list(map(lambda y: f(*y), x))
 
-        x = list(map(lambda data: (torch.stack([
-                    data[1][0].view(3, 3), 
-                    data[1][1].view(3, 3),
-                    data[1][-1]*torch.ones(3, 3)])@(data[0].view(3, -1))).view(3, -1), x))
         return x, y
 
     def __len__(self):
